@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  linker:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=/app/data/linker.db
+      - DEFAULT_DOMAIN=localhost:8080
+      - ALLOWED_DOMAINS=localhost:8080,short.local
+      - JWT_SECRET=your-production-secret-change-this
+      - ANALYTICS=true
+      - ENVIRONMENT=production
+    volumes:
+      - linker_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  linker_data:
