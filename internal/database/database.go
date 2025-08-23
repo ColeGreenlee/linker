@@ -34,6 +34,17 @@ func Init(databaseURL string) (*Database, error) {
 }
 
 func (db *Database) migrate() error {
+	// First, ensure the migrations table exists
+	migrationFile := filepath.Join("migrations", "000_schema_migrations.sql")
+	content, err := ioutil.ReadFile(migrationFile)
+	if err != nil {
+		return fmt.Errorf("failed to read migration tracking file: %w", err)
+	}
+	
+	if _, err := db.Exec(string(content)); err != nil {
+		return fmt.Errorf("failed to create migration tracking table: %w", err)
+	}
+
 	migrations := []string{
 		"001_init.sql",
 		"002_domains.sql", 
@@ -41,6 +52,19 @@ func (db *Database) migrate() error {
 	}
 
 	for _, migration := range migrations {
+		// Check if migration has already been applied
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", migration).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("failed to check migration status for %s: %w", migration, err)
+		}
+		
+		if count > 0 {
+			log.Printf("Migration %s already applied, skipping", migration)
+			continue
+		}
+
+		// Apply the migration
 		migrationFile := filepath.Join("migrations", migration)
 		content, err := ioutil.ReadFile(migrationFile)
 		if err != nil {
@@ -49,6 +73,12 @@ func (db *Database) migrate() error {
 
 		if _, err := db.Exec(string(content)); err != nil {
 			return fmt.Errorf("failed to execute migration %s: %w", migration, err)
+		}
+
+		// Record the migration as applied
+		_, err = db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migration)
+		if err != nil {
+			return fmt.Errorf("failed to record migration %s: %w", migration, err)
 		}
 
 		log.Printf("Migration %s completed successfully", migration)
