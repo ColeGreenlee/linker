@@ -147,7 +147,7 @@ func (h *LinksHandler) UpdateLink(c *gin.Context) {
 		return
 	}
 
-	if err := h.db.UpdateLink(linkID, &req); err != nil {
+	if err := h.db.UpdateLink(linkID, userID, &req); err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 		} else {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"linker/internal/api"
 	"linker/internal/config"

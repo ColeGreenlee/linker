@@ -125,7 +125,7 @@ func (db *Database) GetUserLinks(userID int, limit, offset int) ([]models.Link, 
 	return links, nil
 }
 
-func (db *Database) UpdateLink(linkID int, updates *models.UpdateLinkRequest) error {
+func (db *Database) UpdateLink(linkID, userID int, updates *models.UpdateLinkRequest) error {
 	query := `
 		UPDATE links 
 		SET original_url = COALESCE(?, original_url),
@@ -134,14 +134,26 @@ func (db *Database) UpdateLink(linkID int, updates *models.UpdateLinkRequest) er
 			analytics = ?,
 			expires_at = COALESCE(?, expires_at),
 			updated_at = ?
-		WHERE id = ?`
+		WHERE id = ? AND user_id = ?`
 	
-	_, err := db.Exec(query, 
+	result, err := db.Exec(query, 
 		updates.OriginalURL, updates.Title, updates.Description,
-		updates.Analytics, updates.ExpiresAt, time.Now(), linkID,
+		updates.Analytics, updates.ExpiresAt, time.Now(), linkID, userID,
 	)
+	if err != nil {
+		return err
+	}
 	
-	return err
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	
+	return nil
 }
 
 func (db *Database) DeleteLink(linkID, userID int) error {
