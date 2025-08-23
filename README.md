@@ -208,28 +208,30 @@ docker pull ghcr.io/colegreenlee/linker:main
 
 ```bash
 # Run unit tests
-go test ./tests/auth_test.go ./tests/config_test.go
+go test ./tests/auth_test.go ./tests/config_test.go ./tests/config_json_test.go
 
-# Note: Database tests require CGO for SQLite
+# Run database tests (now work without CGO!)
+go test ./tests/database_test.go
 ```
 
 ### Building
 
 ```bash
-# Build binary
+# Build binary (no CGO required!)
 go build -o linker .
 
-# Build with static linking (for Docker)
-CGO_ENABLED=1 go build -a -ldflags '-linkmode external -extldflags "-static"' -o linker .
+# Build optimized static binary
+go build -a -ldflags '-w -s' -o linker .
 ```
 
 ## Architecture
 
 - **Gin Framework**: Lightweight HTTP router and middleware
-- **SQLite**: Embedded database with foreign keys enabled
+- **SQLite (Pure Go)**: Embedded database with foreign keys enabled (modernc.org/sqlite)
 - **JWT**: Stateless authentication
 - **Bcrypt**: Password hashing
 - **Multi-stage Docker**: Minimal production image
+- **No CGO**: Pure Go implementation for better portability
 
 ## Performance
 

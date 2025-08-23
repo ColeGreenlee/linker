@@ -200,7 +200,7 @@ func TestUpdateLink(t *testing.T) {
 		Analytics:   false,
 	}
 	
-	err = db.UpdateLink(link.ID, updates)
+	err = db.UpdateLink(link.ID, user.ID, updates)
 	if err != nil {
 		t.Fatalf("Failed to update link: %v", err)
 	}

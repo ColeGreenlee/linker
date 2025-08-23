@@ -1,9 +1,6 @@
 # Build stage
 FROM golang:1.21-alpine AS builder
 
-# Install necessary packages for CGO and SQLite
-RUN apk add --no-cache gcc musl-dev sqlite-dev
-
 WORKDIR /app
 
 # Copy go mod files
@@ -13,8 +10,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build with CGO enabled for SQLite
-RUN CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflags "-static"' -o linker .
+# Build static binary (no CGO needed with modernc.org/sqlite)
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -o linker .
 
 # Final stage - minimal image
 FROM alpine:latest
