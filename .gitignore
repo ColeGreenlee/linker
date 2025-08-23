@@ -14,7 +14,8 @@ test.db
 # Database
 *.db
 
-# Environment variables
+# Configuration files
+config.json
 .env
 .env.local
 

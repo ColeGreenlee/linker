@@ -77,6 +77,26 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type APIToken struct {
+	ID         int        `json:"id" db:"id"`
+	UserID     int        `json:"user_id" db:"user_id"`
+	TokenHash  string     `json:"-" db:"token_hash"`
+	Name       *string    `json:"name,omitempty" db:"name"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty" db:"last_used_at"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty" db:"expires_at"`
+	CreatedAt  time.Time  `json:"created_at" db:"created_at"`
+}
+
+type CreateTokenRequest struct {
+	Name      *string    `json:"name,omitempty"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+type CreateTokenResponse struct {
+	Token    string    `json:"token"`
+	APIToken APIToken  `json:"api_token"`
+}
+
 type AuthResponse struct {
 	Token string `json:"token"`
 	User  User   `json:"user"`

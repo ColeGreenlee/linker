@@ -1,0 +1,13 @@
+{
+  "port": "8080",
+  "database_url": "./linker.db",
+  "default_domain": "localhost:8080",
+  "allowed_domains": [
+    "localhost:8080",
+    "short.local",
+    "yourdomain.com"
+  ],
+  "jwt_secret": "your-production-secret-key-change-this",
+  "analytics": true,
+  "environment": "development"
+}

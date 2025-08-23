@@ -211,3 +211,93 @@ func (db *Database) GetLinkAnalytics(linkID int, userID int) ([]models.Click, er
 	
 	return clicks, nil
 }
+
+func (db *Database) CreateAPIToken(token *models.APIToken) error {
+	query := `
+		INSERT INTO api_tokens (user_id, token_hash, name, expires_at, created_at)
+		VALUES (?, ?, ?, ?, ?)
+		RETURNING id`
+	
+	now := time.Now()
+	err := db.QueryRow(query, 
+		token.UserID, token.TokenHash, token.Name, 
+		token.ExpiresAt, now,
+	).Scan(&token.ID)
+	
+	if err != nil {
+		return err
+	}
+	
+	token.CreatedAt = now
+	return nil
+}
+
+func (db *Database) GetUserAPITokens(userID int) ([]models.APIToken, error) {
+	query := `
+		SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at
+		FROM api_tokens WHERE user_id = ? 
+		ORDER BY created_at DESC`
+	
+	rows, err := db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var tokens []models.APIToken
+	for rows.Next() {
+		var token models.APIToken
+		err := rows.Scan(
+			&token.ID, &token.UserID, &token.TokenHash,
+			&token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+	
+	return tokens, nil
+}
+
+func (db *Database) GetAPITokenByHash(tokenHash string) (*models.APIToken, error) {
+	token := &models.APIToken{}
+	query := `
+		SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at
+		FROM api_tokens WHERE token_hash = ?`
+	
+	err := db.QueryRow(query, tokenHash).Scan(
+		&token.ID, &token.UserID, &token.TokenHash,
+		&token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	
+	return token, nil
+}
+
+func (db *Database) UpdateAPITokenLastUsed(tokenID int) error {
+	query := `UPDATE api_tokens SET last_used_at = ? WHERE id = ?`
+	_, err := db.Exec(query, time.Now(), tokenID)
+	return err
+}
+
+func (db *Database) DeleteAPIToken(tokenID, userID int) error {
+	query := `DELETE FROM api_tokens WHERE id = ? AND user_id = ?`
+	result, err := db.Exec(query, tokenID, userID)
+	if err != nil {
+		return err
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	
+	return nil
+}

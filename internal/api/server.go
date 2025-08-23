@@ -47,6 +47,7 @@ func (s *Server) setupRoutes() {
 	linksHandler := handlers.NewLinksHandler(s.db)
 	redirectHandler := handlers.NewRedirectHandler(s.db, s.config.Analytics)
 	analyticsHandler := handlers.NewAnalyticsHandler(s.db)
+	tokensHandler := handlers.NewTokensHandler(s.db)
 
 	api := s.router.Group("/api/v1")
 	{
@@ -55,6 +56,14 @@ func (s *Server) setupRoutes() {
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.GET("/profile", middleware.AuthMiddleware(s.config.JWTSecret), authHandler.Profile)
+		}
+
+		tokens := api.Group("/tokens")
+		tokens.Use(middleware.AuthMiddleware(s.config.JWTSecret))
+		{
+			tokens.POST("", tokensHandler.CreateToken)
+			tokens.GET("", tokensHandler.GetTokens)
+			tokens.DELETE("/:id", tokensHandler.DeleteToken)
 		}
 
 		links := api.Group("/links")

@@ -34,16 +34,25 @@ func Init(databaseURL string) (*Database, error) {
 }
 
 func (db *Database) migrate() error {
-	migrationFile := filepath.Join("migrations", "001_init.sql")
-	content, err := ioutil.ReadFile(migrationFile)
-	if err != nil {
-		return fmt.Errorf("failed to read migration file: %w", err)
+	migrations := []string{
+		"001_init.sql",
+		"002_domains.sql", 
+		"003_api_tokens.sql",
 	}
 
-	if _, err := db.Exec(string(content)); err != nil {
-		return fmt.Errorf("failed to execute migration: %w", err)
+	for _, migration := range migrations {
+		migrationFile := filepath.Join("migrations", migration)
+		content, err := ioutil.ReadFile(migrationFile)
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %w", migration, err)
+		}
+
+		if _, err := db.Exec(string(content)); err != nil {
+			return fmt.Errorf("failed to execute migration %s: %w", migration, err)
+		}
+
+		log.Printf("Migration %s completed successfully", migration)
 	}
 
-	log.Println("Database migration completed successfully")
 	return nil
 }
