@@ -213,21 +213,3 @@ docker-compose up -d
 1. Build and push images to registry
 2. Update `docker-compose.yml` with your registry URLs
 3. Deploy with your container orchestration platform
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable  
-5. Submit a pull request
-
-## 📞 Support
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/colegreenlee/linker/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/colegreenlee/linker/discussions)
-- 📧 **Contact**: [Your Email](mailto:your-email@example.com)
