@@ -88,6 +88,7 @@ jobs:
         TAGS: ${{ steps.meta-api.outputs.tags }}
         DIGEST: ${{ steps.build-and-push-api.outputs.digest }}
       run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      continue-on-error: true
 
   build-ui:
     runs-on: ubuntu-latest
@@ -146,3 +147,4 @@ jobs:
         TAGS: ${{ steps.meta-ui.outputs.tags }}
         DIGEST: ${{ steps.build-and-push-ui.outputs.digest }}
       run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      continue-on-error: true
