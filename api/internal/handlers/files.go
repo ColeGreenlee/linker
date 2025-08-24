@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"linker/internal/auth"
+	"linker/internal/config"
 	"linker/internal/database"
 	"linker/internal/middleware"
 	"linker/internal/models"
@@ -22,12 +23,14 @@ import (
 type FilesHandler struct {
 	db       *database.Database
 	s3Client *storage.S3Client
+	config   *config.Config
 }
 
-func NewFilesHandler(db *database.Database, s3Client *storage.S3Client) *FilesHandler {
+func NewFilesHandler(db *database.Database, s3Client *storage.S3Client, config *config.Config) *FilesHandler {
 	return &FilesHandler{
 		db:       db,
 		s3Client: s3Client,
+		config:   config,
 	}
 }
 
@@ -171,7 +174,54 @@ func (h *FilesHandler) UploadFile(c *gin.Context) {
 		fileRecord.ShortCodes = shortCodeRecords
 	}
 
-	c.JSON(http.StatusCreated, fileRecord)
+	// Get primary short code for URL
+	primaryShortCode := ""
+	if len(shortCodeRecords) > 0 {
+		for _, sc := range shortCodeRecords {
+			if sc.IsPrimary {
+				primaryShortCode = sc.ShortCode
+				break
+			}
+		}
+		if primaryShortCode == "" {
+			primaryShortCode = shortCodeRecords[0].ShortCode
+		}
+	}
+
+	// Build full URL for ShareX compatibility
+	scheme := "https"
+	if c.GetHeader("X-Forwarded-Proto") != "" {
+		scheme = c.GetHeader("X-Forwarded-Proto")
+	} else if c.Request.TLS == nil {
+		scheme = "http"
+	}
+	
+	host := c.Request.Host
+	if host == "" {
+		host = "localhost:8080"
+	}
+	
+	fileURL := fmt.Sprintf("%s://%s/%s/%s", scheme, host, h.config.FilePrefix, primaryShortCode)
+	
+	// ShareX-compatible response format
+	response := gin.H{
+		"success":    true,
+		"file":       fileRecord,
+		"url":        fileURL,
+		"short_code": primaryShortCode,
+		"filename":   header.Filename,
+		"size":       uploadResult.Size,
+		"mime_type":  mimeType,
+		"id":         fileRecord.ID,
+		// Additional ShareX fields
+		"data": gin.H{
+			"link":         fileURL,
+			"delete_url":   fmt.Sprintf("%s://%s/api/v1/files/%s", scheme, host, fileRecord.ID),
+			"thumb":        fileURL, // For images, could be a thumbnail URL
+		},
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 func (h *FilesHandler) GetUserFiles(c *gin.Context) {

@@ -1,9 +1,12 @@
 package middleware
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"linker/internal/auth"
@@ -96,6 +99,23 @@ func GetUserID(c *gin.Context) (string, bool) {
 }
 
 func validateAPIToken(db *database.Database, tokenString string) (string, error) {
-	// This is a simplified version - in production you'd want to use the TokensHandler method
-	return "", sql.ErrNoRows
+	// Hash the provided token
+	hasher := sha256.New()
+	hasher.Write([]byte(tokenString))
+	tokenHash := hex.EncodeToString(hasher.Sum(nil))
+
+	token, err := db.GetAPITokenByHash(tokenHash)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if token is expired
+	if token.ExpiresAt != nil && time.Now().After(*token.ExpiresAt) {
+		return "", sql.ErrNoRows
+	}
+
+	// Update last used timestamp
+	db.UpdateAPITokenLastUsed(token.ID)
+
+	return token.UserID, nil
 }

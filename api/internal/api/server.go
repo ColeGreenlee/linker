@@ -64,7 +64,7 @@ func (s *Server) setupRoutes() {
 		}
 	}
 	
-	filesHandler := handlers.NewFilesHandler(s.db, s3Client)
+	filesHandler := handlers.NewFilesHandler(s.db, s3Client, s.config)
 
 	api := s.router.Group("/api/v1")
 	{
@@ -103,7 +103,7 @@ func (s *Server) setupRoutes() {
 		}
 
 		files := api.Group("/files")
-		files.Use(middleware.AuthMiddleware(s.config.JWTSecret))
+		files.Use(middleware.AuthMiddlewareWithAPITokens(s.config.JWTSecret, s.db))
 		{
 			files.POST("", 
 				s.rateLimiter.FileUploadMiddleware(10, 1*time.Hour), // 10 uploads per hour
@@ -121,8 +121,9 @@ func (s *Server) setupRoutes() {
 	prefixPattern := fmt.Sprintf("/%s/:shortCode", s.config.LinkPrefix)
 	s.router.GET(prefixPattern, redirectHandler.Redirect)
 	
-	// Setup public file download route
-	s.router.GET("/f/:shortCode", filesHandler.DownloadFile)
+	// Setup public file download route with configurable prefix
+	filePrefixPattern := fmt.Sprintf("/%s/:shortCode", s.config.FilePrefix)
+	s.router.GET(filePrefixPattern, filesHandler.DownloadFile)
 	
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

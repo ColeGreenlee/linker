@@ -14,7 +14,9 @@ type Config struct {
 	DatabaseURL    string   `json:"database_url"`
 	DefaultDomain  string   `json:"default_domain"`
 	AllowedDomains []string `json:"allowed_domains"`
-	LinkPrefix     string   `json:"link_prefix"`
+	UnifiedPrefix  string   `json:"unified_prefix,omitempty"`
+	LinkPrefix     string   `json:"link_prefix,omitempty"`
+	FilePrefix     string   `json:"file_prefix,omitempty"`
 	JWTSecret      string   `json:"jwt_secret"`
 	Analytics      bool     `json:"analytics"`
 	Environment    string   `json:"environment"`
@@ -76,8 +78,22 @@ func loadFromJSON() *Config {
 	if len(config.AllowedDomains) == 0 {
 		config.AllowedDomains = []string{config.DefaultDomain}
 	}
-	if config.LinkPrefix == "" {
-		config.LinkPrefix = "x"
+	// Handle unified prefix logic
+	if config.UnifiedPrefix != "" {
+		if config.LinkPrefix == "" {
+			config.LinkPrefix = config.UnifiedPrefix
+		}
+		if config.FilePrefix == "" {
+			config.FilePrefix = config.UnifiedPrefix
+		}
+	} else {
+		// Set defaults for individual prefixes
+		if config.LinkPrefix == "" {
+			config.LinkPrefix = "s"
+		}
+		if config.FilePrefix == "" {
+			config.FilePrefix = "f"
+		}
 	}
 	if config.JWTSecret == "" {
 		config.JWTSecret = "your-secret-key-change-this"
@@ -129,13 +145,35 @@ func loadFromEnv() *Config {
 		}
 	}
 	
+	// Handle unified prefix from environment
+	unifiedPrefix := getEnv("UNIFIED_PREFIX", "")
+	linkPrefix := getEnv("LINK_PREFIX", "")
+	filePrefix := getEnv("FILE_PREFIX", "")
+	
+	if unifiedPrefix != "" {
+		if linkPrefix == "" {
+			linkPrefix = unifiedPrefix
+		}
+		if filePrefix == "" {
+			filePrefix = unifiedPrefix
+		}
+	} else {
+		if linkPrefix == "" {
+			linkPrefix = "s"
+		}
+		if filePrefix == "" {
+			filePrefix = "f"
+		}
+	}
+	
 	fmt.Println("Loaded configuration from environment variables")
 	return &Config{
 		Port:           getEnv("PORT", "8080"),
 		DatabaseURL:    getEnv("DATABASE_URL", "./linker.db"),
 		DefaultDomain:  defaultDomain,
 		AllowedDomains: allowedDomains,
-		LinkPrefix:     getEnv("LINK_PREFIX", "x"),
+		LinkPrefix:     linkPrefix,
+		FilePrefix:     filePrefix,
 		JWTSecret:      getEnv("JWT_SECRET", "your-secret-key-change-this"),
 		Analytics:      getEnvBool("ANALYTICS", true),
 		Environment:    getEnv("ENVIRONMENT", "development"),
