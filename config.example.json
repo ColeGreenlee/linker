@@ -9,5 +9,5 @@
   ],
   "jwt_secret": "your-production-secret-key-change-this",
   "analytics": true,
-  "environment": "development"
+  "environment": "production"
 }
